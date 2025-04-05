@@ -1,0 +1,11 @@
+# .coveragerc
+[run]
+omit =
+    */migrations/*
+    */__init__.py
+    */admin.py
+    */apps.py
+    */wsgi.py
+    */asgi.py
+    manage.py
+    pharmacy/models.py
