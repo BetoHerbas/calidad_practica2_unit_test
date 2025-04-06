@@ -1,6 +1,6 @@
 import pytest
 from django.urls import reverse
-from pharmacy.models import Prescription, CustomUser, Doctor
+from pharmacy.models import Prescription, CustomUser, Doctor, Patients
 from pharmacy.forms import DoctorForm
 from django.contrib.auth.models import Group
 
@@ -102,3 +102,25 @@ def test_doctor_profile_post_invalid(client, user_and_doctor):
     
     assert not user.first_name == 'John'
     assert not user.last_name == 'Doe'
+
+
+@pytest.mark.django_db
+def test_manage_patients_view_returns_200_and_context(client, user_and_doctor):
+    user, _ = user_and_doctor
+    client.login(username='johndoe', password='password123')
+
+    patient = Patients.objects.create(
+        admin=user,
+        first_name='Juan',
+        last_name='Perez',
+        gender='Male',
+        dob='1990-01-01',
+        phone_number='1234567890',
+        address='Some Address',
+        age=30,
+        date_admitted='2025-04-06'
+    )
+
+    response = client.get(reverse('manage_patient_doctor'))
+    assert response.status_code == 200
+    assert 'patients' in response.context
