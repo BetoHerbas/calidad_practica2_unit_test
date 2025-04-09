@@ -37,3 +37,25 @@ def test_login_invalid_credentials(client):
     response = client.post(reverse('login'), {'username': 'nouser', 'password': 'nopass'}, follow=True)
     assert response.status_code == 200
     assert b'Invalid Login Credentials' in response.content
+
+@pytest.mark.django_db
+def test_logout_user(client):
+    user = User.objects.create_user(username='logoutuser', password='pass1234', user_type='1')
+    
+    # Iniciar sesion
+    client.login(username='logoutuser', password='pass1234')
+
+    # Confirmar que esta autenticado
+    response = client.get('/')
+    assert response.wsgi_request.user.is_authenticated
+
+    # Hacer logout
+    response = client.get(reverse('logout'))
+
+    # Redirección correcta
+    assert response.status_code == 302
+    assert response.url == reverse('login')
+
+    # Confirmar que está deslogueado
+    response = client.get('/')
+    assert not response.wsgi_request.user.is_authenticated
