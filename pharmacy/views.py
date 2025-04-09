@@ -34,10 +34,12 @@ def login_page(request):
            
             else:
                 messages.error(request, "Invalid Login!")
-                return redirect('login')
+                return render(request, 'login.html')
+
         else:
             messages.error(request, "Invalid Login Credentials!")
-            return redirect('login')
+            return render(request, 'login.html')
+
     
     return render(request,'login.html')
 
