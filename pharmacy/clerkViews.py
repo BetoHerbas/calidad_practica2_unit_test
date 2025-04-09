@@ -27,7 +27,7 @@ def receptionist_profile(request):
 
     form=ClerkForm()
     if request.method == "POST":
-       
+    
 
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')

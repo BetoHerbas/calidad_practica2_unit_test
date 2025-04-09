@@ -14,7 +14,7 @@ def patient_home(request):
 
     patient_dispen=patient_obj.dispense_set.all().count()
     context={
-          "total_disp":patient_dispen
+        "total_disp":patient_dispen
     }
     return render(request,'patient_templates/patient_home.html',context)
 
@@ -22,17 +22,17 @@ def patient_home(request):
 def patient_profile(request):
     customuser = CustomUser.objects.get(id=request.user.id)
     patien = Patients.objects.get(admin=customuser.id)
-   
+
     form=PatientPicForm1()
     if request.method == "POST":
-       
+    
 
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
         email = request.POST.get('email')
         address = request.POST.get('address')
 
-      
+    
         customuser = CustomUser.objects.get(id=request.user.id)
         customuser.first_name = first_name
         customuser.last_name = last_name
@@ -46,7 +46,7 @@ def patient_profile(request):
         if form.is_valid():
             form.save()
         patien.save()
-       
+    
         messages.success(request, "Profile Updated Successfully")
         return redirect('patient_profile')
 
@@ -54,7 +54,7 @@ def patient_profile(request):
         "patien":patien,
         "form":form
     }
-      
+    
 
     return render(request,'patient_templates/patient_profile.html',context)
 
@@ -99,7 +99,7 @@ def patient_feedback_save(request):
         feedback = request.POST.get('feedback_message')
         staff_obj = Patients.objects.get(admin=request.user.id)
 
-     
+    
         add_feedback =PatientFeedback(patient_id=staff_obj, feedback=feedback, feedback_reply="")
         add_feedback.save()
         messages.success(request, "Feedback Sent.")
@@ -118,7 +118,6 @@ def patient_delete_feedback(request,pk):
         return redirect('patient_feedback')
 
 
-   
     return render(request,'patient_templates/sure_delete.html')
 
 
