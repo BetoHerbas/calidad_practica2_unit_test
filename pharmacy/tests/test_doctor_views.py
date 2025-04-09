@@ -135,7 +135,6 @@ def test_add_prescription_get(client):
 
     patient = Patients.objects.create(first_name='John Doe')
 
-    # Hacer GET a la vista de agregar receta sin el pk en la URL
     response = client.get(reverse('prescribe'))
 
     # Verificar código de estado y plantilla
@@ -187,3 +186,25 @@ def test_add_prescription_post_invalid(client):
 
     #no se crea la receta
     assert Prescription.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_patient_personal_details_with_prescriptions(client):
+    # Crear usuario y paciente
+    user = CustomUser.objects.create_user(username='doctor', password='password123')
+    client.force_login(user)
+
+    patient = Patients.objects.create(first_name='John Doe')
+
+    data = {
+        'patient_id': patient.id,
+        'description': 'Aspirin',
+        'prescribe': '100mg'
+    }
+
+    # Hacer GET a la vista de detalles del paciente
+    response = client.post(reverse('prescribe'), data)
+
+    # Verificar código de estado
+    assert response.status_code == 302 
+    assert Prescription.objects.count() == 1
