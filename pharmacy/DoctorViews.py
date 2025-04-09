@@ -70,9 +70,6 @@ def add_prescription(request,pk):
             messages.error(request,'Prescription Not Added')
             return redirect('manage_patient-doctor')
 
-
- 
-    
     context={
         "form":form
     }
