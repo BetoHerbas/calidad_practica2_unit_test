@@ -78,6 +78,10 @@
      - Manage Personal Account
    
 -----------------------------------------------------------------------------------
+## How to run the Unit Tests
+run the next command in the root of the project
+pytest --cov=pharmacy --cov-config=.coveragerc --cov-report=html
+-----------------------------------------------------------------------------------
 
 N/B: When adding New patient there are some validations in filling the forms 
      For easy filling of forms use fake filler extension in chrome 
