@@ -80,7 +80,7 @@
 -----------------------------------------------------------------------------------
 ## How to run the Unit Tests
 run the next command in the root of the project
-pytest --cov=pharmacy --cov-config=.coveragerc --cov-report=html
+- pytest --cov=pharmacy --cov-config=.coveragerc --cov-report=html
 -----------------------------------------------------------------------------------
 
 N/B: When adding New patient there are some validations in filling the forms 
