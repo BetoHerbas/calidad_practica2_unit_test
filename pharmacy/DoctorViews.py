@@ -99,8 +99,6 @@ def delete_prescription(request,pk):
             return redirect('manage_precrip_doctor')
 
 
-
-
     context={
         "patient":prescribe
     }

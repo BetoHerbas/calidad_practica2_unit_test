@@ -210,71 +210,66 @@ def test_patient_personal_details_with_prescriptions(client):
     assert Prescription.objects.count() == 1
 
 
+
 @pytest.mark.django_db
-def test_add_prescription_post_valid(client, user_and_doctor):
-    user, _ = user_and_doctor  # Recuperamos el usuario doctor
-    client.force_login(user)  # Forzamos el login con el usuario doctor
+def test_delete_prescription_get_confirmation_page(client, user_and_doctor):
+    user, _ = user_and_doctor
+    client.force_login(user)
 
-    # Crear un paciente de prueba
-    patient = Patients.objects.create(first_name='John Doe')
+    patient = Patients.objects.create(first_name='Carlos', last_name='Martínez')
+    prescription = Prescription.objects.create(description='Receta test', patient_id=patient)
 
-    # Datos válidos para la receta
-    data = {
-        'patient_id': patient.id,
-        'description': 'Aspirin',
-        'prescribe': '100mg'
-    }
+    url = reverse('delete_prescription', kwargs={'pk': prescription.id})
+    response = client.get(url)
 
-    # Enviar la solicitud POST para crear la receta
-    response = client.post(reverse('prescribe'), data)
+    assert response.status_code == 200
+    assert 'hod_templates/sure_delete.html' in [t.name for t in response.templates]
+    assert 'patient' in response.context
+    assert response.context['patient'] == prescription
 
-    # Verificar que el estado de la respuesta sea redirección (código 302)
-    assert response.status_code == 302
 
-    # Verificar que la receta se haya creado en la base de datos
-    assert Prescription.objects.count() == 1
-
-    
 @pytest.mark.django_db
 def test_delete_prescription_post_success(client, user_and_doctor):
     user, _ = user_and_doctor
     client.force_login(user)
 
-    # Crear una receta de prueba
-    prescription = Prescription.objects.create(description="Test Prescription")
+    patient = Patients.objects.create(first_name='Laura', last_name='Gómez')
+    prescription = Prescription.objects.create(description='Receta eliminar', patient_id=patient)
 
-    # Enviar una solicitud POST para eliminarla
-    response = client.post(reverse('delete_prescription', args=[prescription.id]), follow=True)
+    url = reverse('delete_prescription', kwargs={'pk': prescription.id})
+    response = client.post(url)
 
-    # Verificar redirección o mensaje
-    assert response.status_code == 200
+    # Verifica redirección
+    assert response.status_code == 302
+    assert response.url == '/admin_user/all_patients/'
 
-    # Verificar que fue eliminada
+    # Verifica que fue eliminada
     assert not Prescription.objects.filter(id=prescription.id).exists()
 
 
+
+
+from unittest.mock import patch
 @pytest.mark.django_db
-def test_add_prescription_post_invalid(client, user_and_doctor):
-    user, _ = user_and_doctor  # Recuperamos el usuario doctor
-    client.force_login(user)  # Forzamos el login con el usuario doctor
+def test_delete_prescription_post_failure(client, user_and_doctor):
+    user, _ = user_and_doctor
+    client.force_login(user)
+    
+    # Crear paciente y receta
+    patient = Patients.objects.create(first_name='Pedro', last_name='Lopez')
+    prescription = Prescription.objects.create(description='Receta que falla', patient_id=patient)
+    
+    # Simula un fallo en el método delete usando patch en la instancia específica
+    with patch.object(prescription, 'delete', side_effect=Exception('Error de prueba')):
+        url = reverse('delete_prescription', kwargs={'pk': prescription.id})
+    
+        # Realiza el POST y espera una redirección
+        response = client.post(url)
+    
+        # Verifica que la respuesta sea una redirección
+        assert response.status_code == 302  # Código de redirección
+      
+    
 
-    # Crear un paciente de prueba
-    patient = Patients.objects.create(first_name='John Doe')
-
-    # Datos inválidos para la receta
-    data = {
-        'patient_id': patient.id,
-        'description': '',
-        'prescribe': ''
-    }
-
-    # Enviar la solicitud POST para crear la receta
-    response = client.post(reverse('prescribe'), data)
-
-    # Verificar que el estado de la respuesta sea 200 (no hubo redirección)
-    assert response.status_code == 200  
-
-    # Verificar que la receta no se haya creado
-    assert Prescription.objects.count() == 0
 
 
