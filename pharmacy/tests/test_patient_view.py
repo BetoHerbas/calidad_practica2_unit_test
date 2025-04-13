@@ -1,7 +1,10 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from django.test import RequestFactory
-from pharmacy.patient_view import patient_home, patient_profile
+from pharmacy.patient_view import patient_home, patient_profile, my_prescription
+from pharmacy.models import CustomUser, Patients, Prescription
+from django.shortcuts import render
+
 
 @pytest.mark.django_db
 @patch('pharmacy.patient_view.Patients')  # Asegúrate que esto coincida con el import en patient_view.py
@@ -38,24 +41,18 @@ def test_patient_home_view(mock_patients):
 @patch("pharmacy.patient_view.CustomUser")
 @patch("pharmacy.patient_view.Patients")
 def test_patient_profile_get_method(mock_patients, mock_custom_user, mock_form_class, mock_messages):
-    # Setup del Request
     factory = RequestFactory()
     request = factory.get('/patient/profile')
     request.user = MagicMock(id=1)
 
-    # Mock de CustomUser
     mock_custom_user.objects.get.return_value = MagicMock(id=1)
 
-    # Mock de Patients
     mock_patients.objects.get.return_value = MagicMock()
 
-    # Mock del Form
     mock_form_class.return_value = MagicMock()
 
-    # Llamada a la vista
     response = patient_profile(request)
 
-    # Verificaciones
     assert response.status_code == 200
     assert b"<html" in response.content.lower() or b"<!doctype" in response.content.lower()
 
@@ -72,11 +69,10 @@ def test_patient_profile_post_valid_form(mock_patients, mock_custom_user, mock_f
         'last_name': 'Perez',
         'email': 'juan@test.com',
         'address': 'Calle Falsa 123'
-    }, FILES={})  # ✅ Esta línea evita el AttributeError
+    }, FILES={})  
 
     request.user = MagicMock(id=1)
 
-    # Mock de modelos y formulario
     mock_user = MagicMock()
     mock_custom_user.objects.get.return_value = mock_user
 
@@ -101,18 +97,16 @@ def test_patient_profile_post_valid_form(mock_patients, mock_custom_user, mock_f
 @patch("pharmacy.patient_view.CustomUser")
 @patch("pharmacy.patient_view.Patients")
 def test_patient_profile_post_invalid_form(mock_patients, mock_custom_user, mock_form_class, mock_messages):
-    # Test Case 3: POST con form inválido
     factory = RequestFactory()
     request = factory.post('/patient/profile', {
         'first_name': 'Juan',
         'last_name': 'Perez',
         'email': 'juan@test.com',
         'address': 'Calle Falsa 123'
-    }, FILES={})  # ✅ Evitamos el error de AttributeError
+    }, FILES={}) 
 
     request.user = MagicMock(id=1)
 
-    # Mocks de modelos y formulario
     mock_user = MagicMock()
     mock_custom_user.objects.get.return_value = mock_user
 
@@ -120,16 +114,42 @@ def test_patient_profile_post_invalid_form(mock_patients, mock_custom_user, mock
     mock_patients.objects.get.return_value = mock_patient
 
     mock_form = MagicMock()
-    mock_form.is_valid.return_value = False  # Formulario inválido
+    mock_form.is_valid.return_value = False  
     mock_form_class.return_value = mock_form
 
     response = patient_profile(request)
 
-    # Verificar que la respuesta tiene el código de estado 302 (Redirección)
     assert response.status_code == 302
 
-    # Verificar que la URL de redirección es la esperada
     assert response.url == "/patient_profile/"
 
     mock_messages.error.assert_not_called()
 
+
+
+@pytest.mark.django_db
+@patch('pharmacy.patient_view.render')
+def test_my_prescription_returns_valid_data(mock_render):
+    user = CustomUser.objects.create_user(username="test_user", user_type=5)
+    patient = Patients.objects.get(admin=user)
+    prescription = Prescription.objects.create(patient_id=patient, description="Test")
+
+    mock_render.return_value = MagicMock(status_code=200)
+    
+    request = RequestFactory().get("/")
+    request.user = user
+    response = my_prescription(request)
+    
+    assert response.status_code == 200
+    
+    args, kwargs = mock_render.call_args
+    
+    assert args[0] == request  
+    assert args[1] == 'doctor_templates/myprescription.html'  
+    
+    context = args[2] if len(args) > 2 else kwargs.get('context', {})
+    
+    assert 'prescrips' in context
+    assert 'patient' in context
+    assert prescription in context['prescrips']
+    assert patient in context['patient']
