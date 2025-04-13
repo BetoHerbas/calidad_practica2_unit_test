@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from django.test import RequestFactory
-from pharmacy.patient_view import patient_home, patient_profile, my_prescription, my_prescription_delete
-from pharmacy.models import CustomUser, Patients, Prescription
+from pharmacy.patient_view import patient_home, patient_profile, my_prescription, my_prescription_delete, patient_feedback
+from pharmacy.models import CustomUser, Patients, Prescription, PatientFeedback
 from django.shortcuts import render
 
 
@@ -203,3 +203,31 @@ def test_get_shows_prescriptions():
         print("\n[ADVERTENCIA] No se encontró texto esperado en la respuesta. Contenido recibido:")
         print(response.content.decode('utf-8'))
     assert "text/html" in response["Content-Type"]
+    
+    
+@pytest.mark.django_db
+def test_patient_feedback_displays_data():
+    """Verifica que la vista muestre feedbacks del paciente"""
+    user = CustomUser.objects.create_user(
+        username="test_patient",
+        password="testpass123",
+        user_type=5
+    )
+    patient = Patients.objects.get(admin=user)
+    
+    feedback = PatientFeedback.objects.create(
+        patient_id=patient,
+        feedback="Atención rápida",
+        feedback_reply="Valoramos tu opinión"
+    )
+
+    request = RequestFactory().get('/patient/feedback/')
+    request.user = user
+    response = patient_feedback(request)
+
+    assert response.status_code == 200
+
+    content = response.content.decode('utf-8').lower()
+
+    assert "atención rápida" in content
+    assert "valoramos tu opinión" in content
