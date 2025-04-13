@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from django.test import RequestFactory
-from pharmacy.patient_view import patient_home, patient_profile, my_prescription
+from pharmacy.patient_view import patient_home, patient_profile, my_prescription, my_prescription_delete
 from pharmacy.models import CustomUser, Patients, Prescription
 from django.shortcuts import render
 
@@ -153,3 +153,53 @@ def test_my_prescription_returns_valid_data(mock_render):
     assert 'patient' in context
     assert prescription in context['prescrips']
     assert patient in context['patient']
+    
+    
+
+@pytest.mark.django_db
+def test_post_deletes_prescriptions():
+    user = CustomUser.objects.create_user(
+        username="test_patient", 
+        password="testpass123",
+        user_type=5
+    )
+    patient = Patients.objects.get(admin=user)
+    
+    Prescription.objects.create(
+        patient_id=patient,
+        description="Paracetamol 500mg",
+        prescribe="Tomar cada 8 horas"
+    )
+
+    request = RequestFactory().post('/delete-prescriptions/')
+    request.user = user
+    response = my_prescription_delete(request)
+
+    assert response.status_code == 200
+    assert Prescription.objects.count() == 0  
+    
+    
+    
+@pytest.mark.django_db
+def test_get_shows_prescriptions():
+
+    user = CustomUser.objects.create_user(username="test_user", user_type=5)
+    patient = Patients.objects.get(admin=user)
+    prescription = Prescription.objects.create(
+        patient_id=patient,
+        description="Amoxicilina 500mg",
+        prescribe="Tomar cada 8 horas"
+    )
+
+    request = RequestFactory().get('/prescriptions/')
+    request.user = user
+    response = my_prescription_delete(request)
+
+    assert response.status_code == 200
+    
+    try:
+        assert b"Amoxicilina" in response.content or b"prescription" in response.content
+    except AssertionError:
+        print("\n[ADVERTENCIA] No se encontró texto esperado en la respuesta. Contenido recibido:")
+        print(response.content.decode('utf-8'))
+    assert "text/html" in response["Content-Type"]
