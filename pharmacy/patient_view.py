@@ -54,7 +54,6 @@ def patient_profile(request):
         "patien":patien,
         "form":form
     }
-    
 
     return render(request,'patient_templates/patient_profile.html',context)
 

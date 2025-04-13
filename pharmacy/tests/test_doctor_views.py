@@ -268,7 +268,6 @@ def test_delete_prescription_post_failure(client, user_and_doctor):
     
         # Verifica que la respuesta sea una redirección
         assert response.status_code == 302  # Código de redirección
-      
     
 
 

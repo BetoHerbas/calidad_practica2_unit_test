@@ -14,7 +14,7 @@ def clerk_home(request):
     patients=Patients.objects.all().count()
 
     context={
-       "patients_total":patients
+    "patients_total":patients
     }
     return render(request,'clerk_templates/clerk_home.html',context)
 
@@ -35,7 +35,7 @@ def receptionist_profile(request):
         address = request.POST.get('address')
         phone_number=request.POST.get('phone_number')
 
-      
+    
         customuser = CustomUser.objects.get(id=request.user.id)
         customuser.first_name = first_name
         customuser.last_name = last_name
@@ -56,7 +56,7 @@ def receptionist_profile(request):
         "staff":staff,
         'user':customuser
     }
-      
+    
 
     return render(request,'clerk_templates/clerk_profile.html',context)
 
@@ -97,7 +97,7 @@ def create_patient(request):
     context={
         "form":form
     }
-       
+    
     return render(request,'clerk_templates/add_patient.html',context)
 
 
@@ -169,8 +169,8 @@ def edit_patient(request,patient_id):
                     messages.error(request, "Failed to Update Patient.")
                     return redirect('all_patients2')
     except Exception:
-         messages.error(request, "Invalid Error!")
-         return redirect('all_patients')
+        messages.error(request, "Invalid Error!")
+        return redirect('all_patients')
 
 
     context = {
@@ -180,7 +180,6 @@ def edit_patient(request,patient_id):
     return render(request, "clerk_templates/edit_patient.html", context)
 
 
-       
 
 @login_required
 def patient_personal_records(request,pk):
