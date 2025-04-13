@@ -127,28 +127,55 @@ def test_manage_patients_view_returns_200_and_context(client, user_and_doctor):
     assert response.status_code == 200
     assert 'patients' in response.context
 
+
 @pytest.mark.django_db
-def test_add_prescription_get(client):
-    # Crear usuario y paciente
-    user = CustomUser.objects.create_user(username='doctor', password='password123')
-    client.force_login(user)
+def test_add_prescription_post_success(client, django_user_model):
+    
+    user = django_user_model.objects.create_user(username="doctor", password="testpass")
+    client.login(username="doctor", password="testpass")
+    
+    patient = Patients.objects.create(first_name='John Doe', last_name='Doe', id='1')
+    
 
-    patient = Patients.objects.create(first_name='John Doe')
+    url = reverse('doctor_prescribe2', kwargs={'pk': str(patient.id)})
+    
+    data = {
+        'patient_id': patient.id,
+        'description': 'Aspirin',
+        'prescribe': '100mg'
+    }
+    
+    response = client.post(url, data)
+    
+    assert response.status_code == 302  
+    
+    messages = [message.message for message in get_messages(response.wsgi_request)]
+    assert 'Prescription added successfully' in messages
+    
+    assert Prescription.objects.filter(patient_id=patient.id).exists()
 
-    response = client.get(reverse('prescribe'))
 
-    # Verificar código de estado y plantilla
+@pytest.mark.django_db
+def test_add_prescription_get_request(client, django_user_model):
+    user = django_user_model.objects.create_user(username="doctor", password="testpass")
+    client.login(username="doctor", password="testpass")
+
+    url = reverse('prescribe')  # sin argumentos
+    response = client.get(url)
+
     assert response.status_code == 200
+    assert 'hod_templates/prescribe.html' in [t.name for t in response.templates]
     assert 'form' in response.context
 
 
+
 @pytest.mark.django_db
-def test_add_prescription_post_valid(client):
-    # Crear usuario y paciente
-    user = CustomUser.objects.create_user(username='doctor', password='password123')
-    client.force_login(user)
+def test_add_prescription_post_valid(client, django_user_model):
+    user = django_user_model.objects.create_user(username="doctor", password="testpass")
+    client.login(username="doctor", password="testpass")
 
     patient = Patients.objects.create(first_name='John Doe')
+    url = reverse('prescribe')  # <-- corregido
 
     data = {
         'patient_id': patient.id,
@@ -156,36 +183,32 @@ def test_add_prescription_post_valid(client):
         'prescribe': '100mg'
     }
 
-    response = client.post(reverse('prescribe'), data)
+    response = client.post(url, data)
 
     assert response.status_code == 302
-
-    assert Prescription.objects.count() == 1
+    assert Prescription.objects.filter(patient_id=patient, description='Aspirin').exists()
 
 
 
 @pytest.mark.django_db
-def test_add_prescription_post_invalid(client):
-    # Crear usuario y paciente
-    user = CustomUser.objects.create_user(username='doctor', password='password123')
-    client.force_login(user)
+def test_add_prescription_post_invalid(client, django_user_model):
+    user = django_user_model.objects.create_user(username="doctor", password="testpass")
+    client.login(username="doctor", password="testpass")
 
     patient = Patients.objects.create(first_name='John Doe')
+    url = reverse('prescribe')  
 
-    # Datos inválidos
     data = {
         'patient_id': patient.id,
         'description': '',
-        'prescribe': ''
+        'prescribe': ''   
     }
 
-    # Hacer POST a la URL de la receta
-    response = client.post(reverse('prescribe'), data)
+    response = client.post(url, data)
 
-    assert response.status_code == 200  
-
-    #no se crea la receta
+    assert response.status_code == 200
     assert Prescription.objects.count() == 0
+    assert 'form' in response.context
 
 
 @pytest.mark.django_db
@@ -267,7 +290,7 @@ def test_delete_prescription_post_failure(client, user_and_doctor):
         response = client.post(url)
     
         # Verifica que la respuesta sea una redirección
-        assert response.status_code == 302  # Código de redirección
+        assert response.status_code == 302  
     
 
 
