@@ -1,12 +1,13 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from django.test import RequestFactory
-from pharmacy.patient_view import patient_home, patient_profile, my_prescription, my_prescription_delete, patient_feedback, patient_feedback_save
-from pharmacy.models import CustomUser, Patients, Prescription, PatientFeedback
+from pharmacy.patient_view import patient_home, patient_profile, my_prescription, my_prescription_delete, patient_feedback, patient_dispense3
+from pharmacy.models import CustomUser, Patients, Prescription, PatientFeedback, Stock, Dispense
 from django.shortcuts import render
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from django.test import Client, TestCase
+from django.contrib.auth.models import User
 
 
 @pytest.mark.django_db
@@ -281,7 +282,6 @@ def test_patient_feedback_save_empty():
     client = Client()
     client.force_login(user)
     
-    # Primero verificamos que no hay feedbacks existentes
     PatientFeedback.objects.all().delete()
     assert PatientFeedback.objects.count() == 0
     
@@ -293,16 +293,45 @@ def test_patient_feedback_save_empty():
     
     assert response.status_code == 200
     
-    # Verificamos el comportamiento REAL de tu vista:
-    # 1. Si la vista crea registros vacíos (como parece ser el caso)
+
     if PatientFeedback.objects.count() > 0:
         feedback = PatientFeedback.objects.first()
         assert feedback.feedback == ''  # Mensaje vacío
         assert feedback.patient_id == patient
-        
-    # 2. O si prefieres que no se creen, cambia la vista y usa este assert:
-    # assert PatientFeedback.objects.count() == 0
-    
-    # Verificar que muestra el mensaje de éxito (aunque esté vacío)
+
     messages = list(get_messages(response.wsgi_request))
     assert any(m.message == "Feedback Sent." for m in messages)
+    
+    
+    
+@pytest.mark.django_db
+def test_patient_dispense3():
+    """Prueba corregida usando el nombre REAL de la URL"""
+
+    user = CustomUser.objects.create_user(
+        username="testuser",
+        password="testpass",
+        user_type=5  
+    )
+    patient = Patients.objects.get(admin=user)
+    
+    med = Stock.objects.create(
+        drug_name="Paracetamol",
+        quantity=10,
+        valid_to="2030-01-01", 
+        drug_description="Analgésico" 
+    )
+    Dispense.objects.create(
+        patient_id=patient,
+        drug_id=med,
+        dispense_quantity=2,
+        instructions="Tomar cada 8 horas" 
+    )
+
+    client = Client()
+    client.force_login(user)
+    response = client.get(reverse('taken_home'))  
+
+    assert response.status_code == 200
+    assert 'patient_templates/patient_dispense.html' in [t.name for t in response.templates]
+    assert len(response.context['dispense']) == 1
