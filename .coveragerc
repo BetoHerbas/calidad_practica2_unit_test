@@ -9,3 +9,4 @@ omit =
     */asgi.py
     manage.py
     pharmacy/models.py
+    */tests/*
